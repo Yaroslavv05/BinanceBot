@@ -6,12 +6,13 @@ client = Client(API_KEY, SECRET_KEY)
 
 class TradeCoin:
 
-    def __init__(self, full_name_coin, name_coin, pair, colvo_coin, profit_spot):
+    def __init__(self, full_name_coin, name_coin, pair, colvo_coin, profit_spot, avg_time):
         self.__full_name_coin = full_name_coin
         self.__name_coin = name_coin
         self.__pair = pair
         self.__colvo_coin = colvo_coin
         self.__profit_spot = profit_spot
+        self.avg_time = avg_time
 
     def open_orders_spot(self):
         balance = client.get_asset_balance(asset=self.__pair)
@@ -59,8 +60,5 @@ class TradeCoin:
             self.open_orders_spot()
             self.close_orders_spot()
 
-
-main = TradeCoin(input('Введите полное название монетки ->').upper(), input('Введите название монеток ->').upper(), input('Введите пару монетки ->').upper(), float(input('Введите кол-во монет ->')), float(input('Введите какой профит хотите получить ->')))
-main.do()
 
 

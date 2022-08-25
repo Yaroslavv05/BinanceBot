@@ -98,6 +98,3 @@ class TradeFutures:
                 print('Бот работает!')
             time.sleep(30)
 
-
-main = TradeFutures(input('Введите название монетки ->').upper(), int(input('Введите кредитное плече ->')), float(input('Введиет сколько USDT хотите поставить ->')), float(input("Введите какой хочешь получить профит в %")))
-main.do()

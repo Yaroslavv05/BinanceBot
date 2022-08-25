@@ -2,14 +2,13 @@ import logging
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from binance.client import Client
-import telegram_send
-import time
 import asyncio
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
-from tradingview_ta import TA_Handler, Interval
 from Config import API_KEY, SECRET_KEY, TOKEN
+from DateFutures import DateFutures
+from DateSpot import DateSpot
 
 storage = MemoryStorage()
 client = Client(API_KEY, SECRET_KEY)
@@ -123,7 +122,7 @@ async def bot_func(message: types.Message):
     elif message.text == 'Начать торговать':
         balance = client.get_asset_balance(asset='USDT')
         balance_get = float(balance.get('free'))
-        if balance_get < 10:
+        if balance_get > 10:
             await bot.send_message(message.from_user.id, '❗️ Средств недостаточно ❗️')
         elif balance_get >= 10:
             await FSMtrade_coin.full_name_coin.set()
@@ -187,285 +186,16 @@ async def bot_func(message: types.Message):
                                                     await bot.send_message(message.from_user.id, 'Минимальный профит который вы можете ввести - 0.01\n\nВведите повторно')
                                                 elif data['profit_spot'] >= 0.01:
                                                     await FSMtrade_coin.avg_time.set()
-                                                    await bot.send_message(message.from_user.id,
-                                                                           'Ввыберите среднее время за которое бот будет покупать монетки:', reply_markup=markup4)
+                                                    await bot.send_message(message.from_user.id,'Ввыберите среднее время за которое бот будет покупать монетки:', reply_markup=markup4)
 
                                                     @dp.message_handler(state=FSMtrade_coin.avg_time)
                                                     async def coin_avg_vuvod(message: types.Message, state: FSMContext):
                                                         async with state.proxy() as data:
                                                             data['avg_time'] = message.text
+                                                            main_spot = DateSpot(message.from_user.id, data['full_name_coin'], data['name_coin'], data['pair'], data['colvo_coin'], data['profit_spot'], data['avg_time'])
+                                                            main_spot.input_date()
                                                         if data['avg_time'] == '5 мин':
                                                             await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБудет работать с:\nМонеткой - ' + data['full_name_coin'] + '\nКол-во монет - ' + str(data['colvo_coin']) + '\nПрофит - ' + str(data['profit_spot']) + ' $\nСреднее время - ' + data['avg_time'])
-                                                            while True:
-                                                                await asyncio.sleep(1)
-                                                                priceChange = client.get_ticker(
-                                                                    symbol=data['full_name_coin'])
-                                                                priceChangePercent = priceChange.get(
-                                                                    'priceChangePercent')
-                                                                f = open('Цена за покупку.txt', 'w')
-                                                                n = open('Цена за продажу.txt', 'w')
-                                                                balance = client.get_asset_balance(asset=data['pair'])
-                                                                free_balance = float(balance.get('free'))
-                                                                ada = client.get_asset_balance(asset=data['name_coin'])
-                                                                free_ada = float(ada.get('free'))
-                                                                klines_5m = client.get_historical_klines(
-                                                                    data['full_name_coin'],
-                                                                    Client.KLINE_INTERVAL_5MINUTE, '1 day UTC')
-                                                                a_5 = len(klines_5m) - 1
-                                                                b_5 = klines_5m[a_5]
-                                                                avg_price = float(b_5[3])
-                                                                if priceChangePercent <= '-1':
-                                                                    if free_balance >= 10:
-                                                                        buy_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='BUY',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=avg_price)
-                                                                        b = float(buy_limit.get('price'))
-                                                                        ll = buy_limit.get('price')
-                                                                        print(buy_limit)
-                                                                        print(b)
-                                                                        f.write(ll)
-                                                                        print(avg_price)
-                                                                else:
-                                                                    if free_balance >= 10:
-                                                                        buy_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='BUY',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=avg_price)
-                                                                        b = float(buy_limit.get('price'))
-                                                                        ll = buy_limit.get('price')
-                                                                        print(buy_limit)
-                                                                        print(b)
-                                                                        f.write(ll)
-                                                                        print(avg_price)
-                                                                        await asyncio.sleep(1)
-                                                                    if free_ada >= 0.00043:
-                                                                        s = float((avg_price * data[
-                                                                            'profit_spot'] / 100) + avg_price)
-                                                                        h = float(round(s, 2))
-                                                                        sel_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='SELL',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=h)
-                                                                        m = sel_limit.get('price')
-                                                                        n.write(m)
-                                                                        print(sel_limit)
-                                                                        f.close()
-                                                                        n.close()
-                                                                    await asyncio.sleep(1)
-                                                        elif data['avg_time'] == '15 мин':
-                                                            await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБудет работать с:\nМонеткой - ' + data['full_name_coin'] + '\nКол-во монет - ' + str(data['colvo_coin']) + '\nПрофит - ' + str(data['profit_spot']) + ' $\nСреднее время - ' + data['avg_time'])
-                                                            while True:
-                                                                await asyncio.sleep(1)
-                                                                priceChange = client.get_ticker(
-                                                                    symbol=data['full_name_coin'])
-                                                                priceChangePercent = priceChange.get(
-                                                                    'priceChangePercent')
-                                                                f = open('Цена за покупку.txt', 'w')
-                                                                n = open('Цена за продажу.txt', 'w')
-                                                                balance = client.get_asset_balance(asset=data['pair'])
-                                                                free_balance = float(balance.get('free'))
-                                                                ada = client.get_asset_balance(asset=data['name_coin'])
-                                                                free_ada = float(ada.get('free'))
-                                                                klines_5m = client.get_historical_klines(
-                                                                    data['full_name_coin'],
-                                                                    Client.KLINE_INTERVAL_15MINUTE, '1 day UTC')
-                                                                a_5 = len(klines_5m) - 1
-                                                                b_5 = klines_5m[a_5]
-                                                                avg_price = float(b_5[3])
-                                                                if priceChangePercent <= '-1':
-                                                                    if free_balance >= 10:
-                                                                        buy_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='BUY',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=avg_price)
-                                                                        b = float(buy_limit.get('price'))
-                                                                        ll = buy_limit.get('price')
-                                                                        print(buy_limit)
-                                                                        print(b)
-                                                                        f.write(ll)
-                                                                        print(avg_price)
-                                                                else:
-                                                                    if free_balance >= 10:
-                                                                        buy_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='BUY',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=avg_price)
-                                                                        b = float(buy_limit.get('price'))
-                                                                        ll = buy_limit.get('price')
-                                                                        print(buy_limit)
-                                                                        print(b)
-                                                                        f.write(ll)
-                                                                        print(avg_price)
-                                                                        await asyncio.sleep(1)
-                                                                    if free_ada >= 0.00043:
-                                                                        s = float((avg_price * data[
-                                                                            'profit_spot'] / 100) + avg_price)
-                                                                        h = float(round(s, 2))
-                                                                        sel_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='SELL',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=h)
-                                                                        m = sel_limit.get('price')
-                                                                        n.write(m)
-                                                                        print(sel_limit)
-                                                                        f.close()
-                                                                        n.close()
-                                                                    await asyncio.sleep(1)
-                                                        elif data['avg_time'] == '60 мин':
-                                                            await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБудет работать с:\nМонеткой - ' + data['full_name_coin'] + '\nКол-во монет - ' + str(data['colvo_coin']) + '\nПрофит - ' + str(data['profit_spot']) + ' $\nСреднее время - ' + data['avg_time'])
-                                                            while True:
-                                                                await asyncio.sleep(1)
-                                                                priceChange = client.get_ticker(
-                                                                    symbol=data['full_name_coin'])
-                                                                priceChangePercent = priceChange.get(
-                                                                    'priceChangePercent')
-                                                                f = open('Цена за покупку.txt', 'w')
-                                                                n = open('Цена за продажу.txt', 'w')
-                                                                balance = client.get_asset_balance(asset=data['pair'])
-                                                                free_balance = float(balance.get('free'))
-                                                                ada = client.get_asset_balance(asset=data['name_coin'])
-                                                                free_ada = float(ada.get('free'))
-                                                                klines_5m = client.get_historical_klines(
-                                                                    data['full_name_coin'], Client.KLINE_INTERVAL_1HOUR,
-                                                                    '1 day UTC')
-                                                                a_5 = len(klines_5m) - 1
-                                                                b_5 = klines_5m[a_5]
-                                                                avg_price = float(b_5[3])
-                                                                if priceChangePercent <= '-1':
-                                                                    if free_balance >= 10:
-                                                                        buy_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='BUY',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=avg_price)
-                                                                        b = float(buy_limit.get('price'))
-                                                                        ll = buy_limit.get('price')
-                                                                        print(buy_limit)
-                                                                        print(b)
-                                                                        f.write(ll)
-                                                                        print(avg_price)
-                                                                else:
-                                                                    if free_balance >= 10:
-                                                                        buy_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='BUY',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=avg_price)
-                                                                        b = float(buy_limit.get('price'))
-                                                                        ll = buy_limit.get('price')
-                                                                        print(buy_limit)
-                                                                        print(b)
-                                                                        f.write(ll)
-                                                                        print(avg_price)
-                                                                        await asyncio.sleep(1)
-                                                                    if free_ada >= 0.00043:
-                                                                        s = float((avg_price * data[
-                                                                            'profit_spot'] / 100) + avg_price)
-                                                                        h = float(round(s, 2))
-                                                                        sel_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='SELL',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=h)
-                                                                        m = sel_limit.get('price')
-                                                                        n.write(m)
-                                                                        print(sel_limit)
-                                                                        f.close()
-                                                                        n.close()
-                                                                    await asyncio.sleep(1)
-                                                        elif data['avg_time'] == '240 мин':
-                                                            await bot.send_message(message.from_user.id,'Бот начинает работу!\n\nБудет работать с:\nМонеткой - ' +data['full_name_coin'] + '\nКол-во монет - ' + str(data['colvo_coin']) + '\nПрофит - ' + str(data['profit_spot']) + ' $\nСреднее время - ' + data['avg_time'])
-                                                            while True:
-                                                                await asyncio.sleep(1)
-                                                                priceChange = client.get_ticker(
-                                                                    symbol=data['full_name_coin'])
-                                                                priceChangePercent = priceChange.get(
-                                                                    'priceChangePercent')
-                                                                f = open('Цена за покупку.txt', 'w')
-                                                                n = open('Цена за продажу.txt', 'w')
-                                                                balance = client.get_asset_balance(asset=data['pair'])
-                                                                free_balance = float(balance.get('free'))
-                                                                ada = client.get_asset_balance(asset=data['name_coin'])
-                                                                free_ada = float(ada.get('free'))
-                                                                klines_5m = client.get_historical_klines(
-                                                                    data['full_name_coin'],
-                                                                    Client.KLINE_INTERVAL_5MINUTE, '1 day UTC')
-                                                                a_5 = len(klines_5m) - 1
-                                                                b_5 = klines_5m[a_5]
-                                                                avg_price = float(b_5[3])
-                                                                if priceChangePercent <= '-1':
-                                                                    if free_balance >= 10:
-                                                                        buy_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='BUY',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=avg_price)
-                                                                        b = float(buy_limit.get('price'))
-                                                                        ll = buy_limit.get('price')
-                                                                        print(buy_limit)
-                                                                        print(b)
-                                                                        f.write(ll)
-                                                                        print(avg_price)
-                                                                else:
-                                                                    if free_balance >= 10:
-                                                                        buy_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='BUY',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=avg_price)
-                                                                        b = float(buy_limit.get('price'))
-                                                                        ll = buy_limit.get('price')
-                                                                        print(buy_limit)
-                                                                        print(b)
-                                                                        f.write(ll)
-                                                                        print(avg_price)
-                                                                        await asyncio.sleep(1)
-                                                                    if free_ada >= 0.00043:
-                                                                        s = float((avg_price * data[
-                                                                            'profit_spot'] / 100) + avg_price)
-                                                                        h = float(round(s, 2))
-                                                                        sel_limit = client.create_order(
-                                                                            symbol=data['full_name_coin'],
-                                                                            side='SELL',
-                                                                            type='LIMIT',
-                                                                            timeInForce='GTC',
-                                                                            quantity=data['colvo_coin'],
-                                                                            price=h)
-                                                                        m = sel_limit.get('price')
-                                                                        n.write(m)
-                                                                        print(sel_limit)
-                                                                        f.close()
-                                                                        n.close()
-                                                                    await asyncio.sleep(1)
                                                         else:
                                                             await FSMtrade_coin.avg_time.set()
                                                             await bot.send_message(message.from_user.id, '❗️ Ошибка ❗️\n\nПовторите попытку')
@@ -559,107 +289,27 @@ async def bot_func(message: types.Message):
                                     data['sum_usdt'] = float(message.text)
                                 if data['sum_usdt'] <= 0 or data['sum_usdt'] > balance_futures_trade_get:
                                     await FSMFuturesTrade.sum_usdt.set()
-                                    await bot.send_message(message.from_user.id,
-                                                           'Сумма не может привышать вашего баланса или  быть меньше 0!\n\nВведите повторно')
+                                    await bot.send_message(message.from_user.id, 'Сумма не может привышать вашего баланса или  быть меньше 0!\n\nВведите повторно')
                                 else:
                                     await FSMFuturesTrade.profit.set()
-                                    await bot.send_message(message.from_user.id,
-                                                           'Введите какой вы хотите процент прибыли:\n\nНапример: 1')
+                                    await bot.send_message(message.from_user.id, 'Введите какой вы хотите процент прибыли:\n\nНапример: 1')
 
                                     @dp.message_handler(state=FSMFuturesTrade.profit)
                                     async def name_coin_futures(message: types.Message, state: FSMContext):
                                         async with state.proxy() as data:
                                             data['profit'] = float(message.text)
+                                            main = DateFutures(message.from_user.id, data['name_coin_futures'], data['leverage'], data['sum_usdt'], data['profit'])
+                                            main.input_date()
                                         if data['profit'] <= 0:
                                             await FSMFuturesTrade.profit.set()
-                                            await bot.send_message(message.from_user.id,
-                                                                   'Процент прибыли не может быть меньше или равняться 0\n\nВведите повторно')
+                                            await bot.send_message(message.from_user.id, 'Процент прибыли не может быть меньше или равняться 0\n\nВведите повторно')
                                         elif data['profit'] > 0:
-                                            while True:
-                                                await asyncio.sleep(30)
-                                                open_orders_futures = client.futures_get_open_orders()
-                                                open_orders_futures_len = len(open_orders_futures)
-                                                print(open_orders_futures_len)
-                                                if open_orders_futures_len == 0:
-                                                    await asyncio.sleep(180)
-                                                    tesla = TA_Handler(
-                                                        symbol=data['name_coin_futures'],
-                                                        screener="crypto",
-                                                        exchange='BINANCE',
-                                                        interval=Interval.INTERVAL_15_MINUTES)
-                                                    tesla_indic = tesla.get_indicators()
-                                                    indic_up_round = round(tesla_indic.get('BB.upper'), 4)
-                                                    indic_low_round = round(tesla_indic.get('BB.lower'), 4)
-                                                    print(indic_up_round)
-                                                    print(indic_low_round)
-                                                    leverage = client.futures_change_leverage(
-                                                        symbol=data['name_coin_futures'], leverage=data['leverage'])
-                                                    print(leverage)
-                                                    open_orders_futures = client.futures_get_open_orders()
-                                                    open_orders_futures_len = len(open_orders_futures)
-                                                    if open_orders_futures_len >= 0:
-                                                        coin = client.get_symbol_ticker(
-                                                            symbol=data['name_coin_futures'])
-                                                        price_coin_round = round(float(coin.get('price')), 4)
-                                                        if price_coin_round >= indic_up_round:
-                                                            colvo_usdt_long = round(
-                                                                (data['sum_usdt'] * data['leverage']) / indic_up_round,
-                                                                1)
-                                                            limit_order_long = client.futures_create_order(
-                                                                symbol=data['name_coin_futures'],
-                                                                side='BUY',
-                                                                positionSide='LONG',
-                                                                type='LIMIT',
-                                                                quantity=colvo_usdt_long,
-                                                                timeInForce='GTC',
-                                                                price=indic_up_round)
-                                                            print(limit_order_long)
-                                                            stop_price_long_round = round(
-                                                                float((price_coin_round * data[
-                                                                    'profit'] / 100 + price_coin_round)), 4)
-                                                            sell_stop_market_long = client.futures_create_order(
-                                                                symbol=data['name_coin_futures'],
-                                                                side='SELL',
-                                                                type='TAKE_PROFIT_MARKET',
-                                                                positionSide='LONG',
-                                                                quantity=colvo_usdt_long,
-                                                                stopPrice=stop_price_long_round)
-                                                            print(sell_stop_market_long)
-                                                        if price_coin_round <= indic_low_round:
-                                                            colvo_usdt_short = round(
-                                                                (data['sum_usdt'] * data['leverage']) / indic_low_round,
-                                                                1)
-                                                            limit_order_short = client.futures_create_order(
-                                                                symbol=data['name_coin_futures'],
-                                                                side='SELL',
-                                                                positionSide='SHORT',
-                                                                type='LIMIT',
-                                                                quantity=colvo_usdt_short,
-                                                                timeInForce='GTC',
-                                                                price=indic_low_round
-                                                            )
-                                                            print(limit_order_short)
-                                                            stop_price_short_round = round(float((price_coin_round *
-                                                                                                  data[
-                                                                                                      'profit'] / 100 - price_coin_round) * -1),
-                                                                                           4)
-                                                            sell_stop_market_short = client.futures_create_order(
-                                                                symbol=data['name_coin_futures'],
-                                                                side='=SELL',
-                                                                type='TAKE_PROFIT_MARKET',
-                                                                positionSide='SHORT',
-                                                                quantity=colvo_usdt_short,
-                                                                stopPrice=stop_price_short_round)
-                                                            print(sell_stop_market_short)
-                                                    await asyncio.sleep(180)
-                                                elif open_orders_futures_len > 0:
-                                                    await bot.send_message(message.from_user.id,
-                                                                           'В данный момент бот работает!\n\nОжидайте')
-                                                await asyncio.sleep(30)
+                                            main.get_info()
         elif open_orders_futures_len > 0:
             await bot.send_message(message.from_user.id, '❗️ Бот уже работает ❗️\n\nОжидайте', reply_markup=markup5)
     else:
         await bot.send_message(message.from_user.id, 'Главное меню', reply_markup=markup5)
+
 if __name__ == '__main__':
     executor.start_polling(dp, skip_updates=True)
 else:
