@@ -8,6 +8,7 @@ from aiogram.contrib.fsm_storage.memory import MemoryStorage
 from Config import API_KEY, SECRET_KEY, TOKEN
 from DateFutures import DateFutures
 from DateSpot import DateSpot
+from DateUsers import DateUsers
 
 storage = MemoryStorage()
 client = Client(API_KEY, SECRET_KEY)
@@ -57,6 +58,8 @@ class FSMFuturesTrade(StatesGroup):
     name_coin = State()
 @dp.message_handler(content_types=['text'], state=None)
 async def bot_func(message: types.Message):
+    date_users = DateUsers(message.from_user.id, message.from_user.username, message.from_user.full_name)
+    date_users.recorde_in_date()
     print(f"id: {message.from_user.id} | Name: {message.from_user.full_name} | Msg: {message.text} | Time: {message.date}")
     if message.text == 'Начать!':
         await bot.send_message(message.from_user.id, 'Главное меню:', reply_markup=markup5)
@@ -317,7 +320,7 @@ async def bot_func(message: types.Message):
                                             await FSMFuturesTrade.profit.set()
                                             await bot.send_message(message.from_user.id, 'Процент прибыли не может быть меньше или равняться 0\n\nВведите повторно')
                                         elif data['profit'] > 0:
-                                            await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБот будет работать с:\nМонеткой - ' + data['name_coin_futures'] + '\nС кредитным плечом - ' + data['leverage'] + '\nС суммой: ' + data['sum_usdt'] + '\nПрофит в %: ' + data['profit'])
+                                            await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБот будет работать с:\nМонеткой - ' + data['name_coin_futures'] + '\nС кредитным плечом - ' + str(data['leverage']) + '\nС суммой: ' + str(data['sum_usdt']) + '\nПрофит в %: ' + str(data['profit']))
                                             main.get_info()
         elif open_orders_futures_len > 0:
             await bot.send_message(message.from_user.id, '❗️ Бот уже работает ❗️\n\nОжидайте', reply_markup=markup5)
