@@ -2,7 +2,6 @@ import logging
 from aiogram import Bot, Dispatcher, executor, types
 from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
 from binance.client import Client
-import asyncio
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
 from aiogram.contrib.fsm_storage.memory import MemoryStorage
@@ -122,7 +121,7 @@ async def bot_func(message: types.Message):
     elif message.text == 'Начать торговать':
         balance = client.get_asset_balance(asset='USDT')
         balance_get = float(balance.get('free'))
-        if balance_get > 10:
+        if balance_get < 10:
             await bot.send_message(message.from_user.id, '❗️ Средств недостаточно ❗️')
         elif balance_get >= 10:
             await FSMtrade_coin.full_name_coin.set()
@@ -196,6 +195,20 @@ async def bot_func(message: types.Message):
                                                             main_spot.input_date()
                                                         if data['avg_time'] == '5 мин':
                                                             await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБудет работать с:\nМонеткой - ' + data['full_name_coin'] + '\nКол-во монет - ' + str(data['colvo_coin']) + '\nПрофит - ' + str(data['profit_spot']) + ' $\nСреднее время - ' + data['avg_time'])
+                                                            main_spot.get_info()
+                                                            await bot.send_message(message.from_user.id, 'Бот закончит работу когда ' + data['full_name_coin'] + ' вырастет на ' + str(data['profit_spot']) + ' ¢')
+                                                        elif data['avg_time'] == '15 мин':
+                                                            await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБудет работать с:\nМонеткой - ' + data['full_name_coin'] + '\nКол-во монет - ' + str(data['colvo_coin']) + '\nПрофит - ' + str(data['profit_spot']) + ' $\nСреднее время - ' + data['avg_time'])
+                                                            main_spot.get_info()
+                                                            await bot.send_message(message.from_user.id, 'Бот закончит работу когда ' + data['full_name_coin'] + ' вырастет на ' + str(data['profit_spot']) + ' ¢')
+                                                        elif data['avg_time'] == '60 мин':
+                                                            await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБудет работать с:\nМонеткой - ' + data['full_name_coin'] + '\nКол-во монет - ' + str(data['colvo_coin']) + '\nПрофит - ' + str(data['profit_spot']) + ' $\nСреднее время - ' + data['avg_time'])
+                                                            main_spot.get_info()
+                                                            await bot.send_message(message.from_user.id, 'Бот закончит работу когда ' + data['full_name_coin'] + ' вырастет на ' + str(data['profit_spot']) + ' ¢')
+                                                        elif data['avg_time'] == '240 мин':
+                                                            await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБудет работать с:\nМонеткой - ' + data['full_name_coin'] + '\nКол-во монет - ' + str(data['colvo_coin']) + '\nПрофит - ' + str(data['profit_spot']) + ' $\nСреднее время - ' + data['avg_time'])
+                                                            main_spot.get_info()
+                                                            await bot.send_message(message.from_user.id, 'Бот закончит работу когда ' + data['full_name_coin'] + ' вырастет на ' + str(data['profit_spot']) + ' ¢')
                                                         else:
                                                             await FSMtrade_coin.avg_time.set()
                                                             await bot.send_message(message.from_user.id, '❗️ Ошибка ❗️\n\nПовторите попытку')
@@ -304,6 +317,7 @@ async def bot_func(message: types.Message):
                                             await FSMFuturesTrade.profit.set()
                                             await bot.send_message(message.from_user.id, 'Процент прибыли не может быть меньше или равняться 0\n\nВведите повторно')
                                         elif data['profit'] > 0:
+                                            await bot.send_message(message.from_user.id, 'Бот начинает работу!\n\nБот будет работать с:\nМонеткой - ' + data['name_coin_futures'] + '\nС кредитным плечом - ' + data['leverage'] + '\nС суммой: ' + data['sum_usdt'] + '\nПрофит в %: ' + data['profit'])
                                             main.get_info()
         elif open_orders_futures_len > 0:
             await bot.send_message(message.from_user.id, '❗️ Бот уже работает ❗️\n\nОжидайте', reply_markup=markup5)

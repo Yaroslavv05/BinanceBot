@@ -35,7 +35,7 @@ class DateSpot:
                              (self.user_ID, self.full_name_coin, self.name_coim, self.pair, self.colvo_coin, self.profit, self.avg_time))
             self.con.commit()
 
-    def det_info(self):
+    def get_info(self):
        full_name_coin = self.full_name_coin
        name_coin = self.name_coim
        pair = self.pair

@@ -15,11 +15,6 @@ class TradeCoin:
         self.avg_time = avg_time
 
     def open_orders_spot(self):
-        balance = client.get_asset_balance(asset=self.__pair)
-        self.free_balance = float(balance.get('free'))
-        klines_5m = client.get_historical_klines(self.__full_name_coin, Client.KLINE_INTERVAL_5MINUTE, '1 day UTC')
-        avg_5 = len(klines_5m) - 1
-        self.b_5 = klines_5m[avg_5]
         buy_limit = client.create_order(
             symbol=self.__full_name_coin,
             side='BUY',
@@ -27,13 +22,37 @@ class TradeCoin:
             timeInForce='GTC',
             quantity=self.__colvo_coin,
             price=self.avg_price)
-        coin_price = float(buy_limit.get('price'))
-        coin_price_get = buy_limit.get('coin_price')
         print(buy_limit)
-        print(coin_price)
+        coin_price_get = buy_limit.get('coin_price')
         self.price_per_buy.write(coin_price_get)
-        time.sleep(5)
-        print(self.avg_price)
+
+    def avg_price_5min(self):
+        klines_5m = client.get_historical_klines(self.__full_name_coin, Client.KLINE_INTERVAL_5MINUTE, '1 day UTC')
+        avg_5 = len(klines_5m) - 1
+        self.b_5 = klines_5m[avg_5]
+        self.avg_price = float(self.b_5[3])
+        self.open_orders_spot()
+
+    def avg_price_15min(self):
+        klines_5m = client.get_historical_klines(self.__full_name_coin, Client.KLINE_INTERVAL_15MINUTE, '1 day UTC')
+        avg_5 = len(klines_5m) - 1
+        self.b_5 = klines_5m[avg_5]
+        self.avg_price = float(self.b_5[3])
+        self.open_orders_spot()
+
+    def avg_price_60min(self):
+        klines_5m = client.get_historical_klines(self.__full_name_coin, Client.KLINE_INTERVAL_1HOUR, '1 day UTC')
+        avg_5 = len(klines_5m) - 1
+        self.b_5 = klines_5m[avg_5]
+        self.avg_price = float(self.b_5[3])
+        self.open_orders_spot()
+
+    def avg_price_240min(self):
+        klines_5m = client.get_historical_klines(self.__full_name_coin, Client.KLINE_INTERVAL_4HOUR, '1 day UTC')
+        avg_5 = len(klines_5m) - 1
+        self.b_5 = klines_5m[avg_5]
+        self.avg_price = float(self.b_5[3])
+        self.open_orders_spot()
 
 
     def close_orders_spot(self):
@@ -52,13 +71,19 @@ class TradeCoin:
         self.price_per_sell.close()
 
     def do(self):
-        time.sleep(1)
+        time.sleep(60)
         self.price_per_buy = open('Цена за покупку.txt', 'w')
         self.price_per_sell = open('Цена за продажу.txt', 'w')
-        self.avg_price = float(self.b_5[3])
-        if self.free_balance >= 10:
-            self.open_orders_spot()
-            self.close_orders_spot()
+        if self.avg_price == '5 мин':
+            self.avg_price_5min()
+        elif self.avg_price == '15 мин':
+            self.avg_price_15min()
+        elif self.avg_price == '60 мин':
+            self.avg_price_60min()
+        elif self.avg_price == '240 мин':
+            self.avg_price_240min()
+        time.sleep(120)
+        self.close_orders_spot()
 
 
 
