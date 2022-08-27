@@ -1,6 +1,6 @@
 import logging
 from aiogram import Bot, Dispatcher, executor, types
-from aiogram.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardMarkup, InlineKeyboardButton
+from aiogram.types import ReplyKeyboardMarkup
 from binance.client import Client
 from aiogram.dispatcher import FSMContext
 from aiogram.dispatcher.filters.state import State, StatesGroup
@@ -9,6 +9,11 @@ from Config import API_KEY, SECRET_KEY, TOKEN
 from DateFutures import DateFutures
 from DateSpot import DateSpot
 from DateUsers import DateUsers
+from PriceCoin import knowCoin
+from PriceDisplay import Display
+from WalletAccount import walet
+from AllOrders import Orsers
+from WalletAccountFutureses import WalletFutures
 
 storage = MemoryStorage()
 client = Client(API_KEY, SECRET_KEY)
@@ -28,12 +33,6 @@ markup2 = ReplyKeyboardMarkup(resize_keyboard=True, row_width=2)
 markup2.add('Цена монетки', 'Узнать за какую цену мы купили/продажу монетку', 'Все ордера которые были на этом аккаунте', 'Вывод цен монетки за 5/15 мин', 'Отмена!')
 markup1 = ReplyKeyboardMarkup(resize_keyboard=True, row_width=1)
 markup1.add('Начать торговать', 'Счет кошелька', 'Отмена!')
-f = open('../Цена за покупку.txt', 'r')
-n = open('../Цена за продажу.txt', 'r')
-price_5m = open('../Цены за 5 мин.txt', 'w')
-price_15m = open('../Цены за 15 мин.txt', 'w')
-price_5m_r = open('../Цены за 5 мин.txt', 'rb')
-price_15m_r = open('../Цены за 15 мин.txt', 'rb')
 
 @dp.message_handler(commands=['start'])
 async def welcome(message: types.Message):
@@ -80,9 +79,9 @@ async def bot_func(message: types.Message):
             async with state.proxy() as data:
                 data['name'] = message.text
             if len(data['name']) == 7 or len(data['name']) == 8:
-                price_all = client.get_symbol_ticker(symbol=data['name'])
-                price = str(float(price_all.get('price')))
-                await bot.send_message(message.from_user.id, price + ' $', reply_markup=markup2)
+                knowPrice = knowCoin(data['name'])
+                knowPrice.know()
+                await bot.send_message(message.from_user.id, knowPrice.price + ' $', reply_markup=markup2)
                 await state.finish()
             elif len(data['name']) <= 6 or len(data['name']) >= 9:
                 await FSMcoin_price.name.set()
@@ -101,18 +100,11 @@ async def bot_func(message: types.Message):
             async with state.proxy() as data:
                 data['name'] = message.text
             if len(data['name']) == 7 or len(data['name']) == 8:
-                klines_5m = client.get_historical_klines(data['name'], Client.KLINE_INTERVAL_5MINUTE, '1 day UTC')
-                for i in range(len(klines_5m)):
-                    a_5 = klines_5m[i]
-                    price_5m.write(str(float(a_5[3])) + ' $' + '\n')
-                klines_15m = client.get_historical_klines(data['name'], Client.KLINE_INTERVAL_15MINUTE, '1 day UTC')
-                for i in range(len(klines_15m)):
-                    a_15 = klines_15m[i]
-                    price_15m.write(str(float(a_15[3])) + ' $' + '\n')
-                price_5m.close()
-                price_15m.close()
-                await bot.send_document(message.from_user.id, price_5m_r)
-                await bot.send_document(message.from_user.id, price_15m_r)
+                record = Display(data['name'])
+                record.display()
+                await bot.send_document(message.from_user.id, record.price_5m_r)
+                await bot.send_document(message.from_user.id, record.price_15m_r)
+                await state.finish()
             elif len(data['name']) <= 6 or len(data['name']) >= 8:
                 await FSMcoin_price_avg.name.set()
                 await bot.send_message(message.from_user.id, 'Название монетки должно содержать 7/8 символов!\n\nВведите повторно')
@@ -216,29 +208,9 @@ async def bot_func(message: types.Message):
                                                             await FSMtrade_coin.avg_time.set()
                                                             await bot.send_message(message.from_user.id, '❗️ Ошибка ❗️\n\nПовторите попытку')
     elif message.text == 'Счет кошелька':
-        assets_ada = client.get_asset_balance(asset='ADA')
-        ada_balance = assets_ada.get('free')
-        assets_bnb = client.get_asset_balance(asset='BNB')
-        bnb_balance = assets_bnb.get('free')
-        assets_xrp = client.get_asset_balance(asset='XRP')
-        xrp_balance = assets_xrp.get('free')
-        assets_usdt = client.get_asset_balance(asset='USDT')
-        usdt_balance = assets_usdt.get('free')
-        ada_price = client.get_symbol_ticker(symbol='ADAUSDT')
-        symvol = ada_price.get('symbol')
-        price = ada_price.get('price')
-        bnb_price = client.get_symbol_ticker(symbol='BNBUSDT')
-        b_price = bnb_price.get('price')
-        xrp_price = client.get_symbol_ticker(symbol='XRPUSDT')
-        x_price = xrp_price.get('price')
-        await bot.send_message(message.from_user.id, 'Баланс кошелька USDT: ' + str(float(usdt_balance)) + '\nМонеток ADA: ' + str(float(ada_balance)) + ' шт. ' + 'в $ 1 шт. = ' + str(float(price)) + '\nМонеток BNB: ' + str(float(bnb_balance)) + ' шт. ' + 'в $ 1 шт. = ' + str(float(b_price)) + '\nМонеток XRP: ' + str(float(xrp_balance)) + ' шт. ' 'в $ 1 шт. = ' + str(float(x_price)))
-    elif message.text == 'Узнать за какую цену мы купили/продажу монетку':
-        for line in f:
-            await bot.send_message(message.from_user.id, 'Цена за покупку составляет:  ' + line + '  $')
-        for line3 in n:
-            await bot.send_message(message.from_user.id, 'Цена за продажу составляет:  ' + line3 + '  $')
-        f.close()
-        n.close()
+        balance = walet()
+        balance.main()
+        await bot.send_message(message.from_user.id, 'Баланс кошелька USDT: ' + str(float(balance.usdt_balance)) + '\nМонеток ADA: ' + str(float(balance.ada_balance)) + ' шт. ' + 'в $ 1 шт. = ' + str(float(balance.price)) + '\nМонеток BNB: ' + str(float(balance.bnb_balance)) + ' шт. ' + 'в $ 1 шт. = ' + str(float(balance.b_price)) + '\nМонеток XRP: ' + str(float(balance.xrp_balance)) + ' шт. ' 'в $ 1 шт. = ' + str(float(balance.x_price)))
     elif message.text == 'Все ордера которые были на этом аккаунте':
         await FSMFuturesTrade.name_coin.set()
         await bot.send_message(message.from_user.id, 'Введите название монетки для получение данных:\n\n(ЕСЛИ НИЧЕГО НЕ ВЫВОДИТЬСЯ ЗНАЧИТ С ДАННОЙ МОНЕТОЙ НИЧЕГО НЕ ПРОИСХОДИЛО У ВАС НА АККАУНТЕ)')
@@ -247,21 +219,14 @@ async def bot_func(message: types.Message):
         async def name_coin_futures(message: types.Message, state: FSMContext):
              async with state.proxy() as data:
                  data['name_coin'] = message.text
-             order = client.get_all_orders(symbol=data['name_coin'])
-             element_count = len([item for item in order])
-             for i in range(element_count):
-                 order_symbol = order[i].get('symbol')
-                 order_price = order[i].get('price')
-                 order_origQty = order[i].get('origQty')
-                 order_cummulativeQuoteQty = order[i].get('cummulativeQuoteQty')
-                 order_side = order[i].get('side')
-                 await bot.send_message(message.from_user.id, 'Название монетки: ' + order_symbol + '\nЦена за которую купили/продали монетку: ' + order_price + '\nКол-во монеток которых купили/продали: ' + order_origQty + '\nСумма монеток которых мы купили/продали: ' + order_cummulativeQuoteQty + '\nЧто мы с этой монеткой сделали: ' + order_side)
+             orders = Orsers(data['name_coin'])
+             orders.main()
+             await bot.send_message(message.from_user.id, 'Название монетки: ' + orders.order_symbol + '\nЦена за которую купили/продали монетку: ' + orders.order_price + '\nКол-во монеток которых купили/продали: ' + orders.order_origQty + '\nСумма монеток которых мы купили/продали: ' + orders.order_cummulativeQuoteQty + '\nЧто мы с этой монеткой сделали: ' + orders.order_side)
              await state.finish()
     elif message.text == 'Узнать баланс':
-        balance_futures = client.futures_account_balance()
-        balance_futures_get = float(balance_futures[6].get('balance'))
-        balance_futures_get_round = str(round(balance_futures_get, 2))
-        await bot.send_message(message.from_user.id, 'Ваш баланс: ' + balance_futures_get_round + ' $', reply_markup=markup6)
+        walletFutures = WalletFutures()
+        walletFutures.main()
+        await bot.send_message(message.from_user.id, 'Ваш баланс: ' + walletFutures.balance_futures_get + ' $', reply_markup=markup6)
     elif message.text == 'Начать торговлю':
         open_orders_futures = client.futures_get_open_orders()
         open_orders_futures_len = len(open_orders_futures)

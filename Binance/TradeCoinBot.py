@@ -56,7 +56,7 @@ class TradeCoin:
 
 
     def close_orders_spot(self):
-        profit = float(round((self.avg_price * self.__profit_spot / 100) + self.avg_price), 2)
+        profit = round(float((self.avg_price * self.__profit_spot / 100) + self.avg_price), 2)
         sel_limit = client.create_order(
             symbol=self.__full_name_coin,
             side='SELL',

@@ -9,7 +9,6 @@ class DateUsers:
         self.user_id = user_id
         self.name_user = name_user
         self.full_name_user = full_name_user
-
         try:
             self.cur.execute("CREATE TABLE users(user_ID, name_user, full_name_user)")
             self.con.commit()
