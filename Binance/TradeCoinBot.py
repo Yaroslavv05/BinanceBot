@@ -70,6 +70,7 @@ class TradeCoin:
         self.price_per_buy.close()
         self.price_per_sell.close()
 
+
     def do(self):
         time.sleep(60)
         self.price_per_buy = open('Цена за покупку.txt', 'w')
