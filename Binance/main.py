@@ -232,7 +232,7 @@ async def bot_func(message: types.Message):
         open_orders_futures_len = len(open_orders_futures)
         if open_orders_futures_len == 0:
             await FSMFuturesTrade.name_coin_futures.set()
-            await bot.send_message(message.from_user.id, 'Введите название монеетки:')
+            await bot.send_message(message.from_user.id, 'Введите название монеетки:\n\nНапример: BTCUSDT')
 
             @dp.message_handler(state=FSMFuturesTrade.name_coin_futures)
             async def name_coin_futures(message: types.Message, state: FSMContext):
@@ -245,7 +245,7 @@ async def bot_func(message: types.Message):
                                            'Название монетки должно содержать 7/8 символов!\n\nВведите повторно')
                 elif len(data['name_coin_futures']) == 7 or len(data['name_coin_futures']) == 8:
                     await FSMFuturesTrade.leverage.set()
-                    await bot.send_message(message.from_user.id, 'Введите кредитное плечо:')
+                    await bot.send_message(message.from_user.id, 'Введите кредитное плечо:\n\nНапример:20')
 
                     @dp.message_handler(state=FSMFuturesTrade.leverage)
                     async def name_coin_futures(message: types.Message, state: FSMContext):
