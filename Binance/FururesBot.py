@@ -5,6 +5,7 @@ from Config import API_KEY, SECRET_KEY
 
 client = Client(API_KEY, SECRET_KEY)
 
+
 class TradeFutures:
 
     def __init__(self, name_coin, leverage, col_vo_usdt, profit):
