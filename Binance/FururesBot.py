@@ -62,7 +62,7 @@ class TradeFutures:
         print(limit_order_short)
 
     def stop_price_short(self):
-        stop_price_short_round = round(float((self.price_coin_round * self.__col_vo_usdt / 100 - self.price_coin_round) * -1), 4)
+        stop_price_short_round = round(float((self.price_coin_round * self.__profit / 100 - self.price_coin_round) * -1), 4)
         sell_stop_market_short = client.futures_create_order(
             symbol=self.__name_coin,
             side='SELL',
